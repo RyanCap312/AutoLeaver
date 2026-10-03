@@ -7,9 +7,9 @@ local LocalPlayer = Players.LocalPlayer
 -- SETTINGS
 --==================================================
 
-local detectionDistance = 150
+local detectionDistance = 50
 local minimizeKey = Enum.KeyCode.RightShift
-local enabled = false
+local enabled = true
 
 -- Add IDs here if you want defaults
 local blockedUserIds = {
@@ -408,76 +408,65 @@ local function isBlockedUser(player)
             return true
         end
     end
---==================================================
--- PROXIMITY / PROTECTION DETECTION
---==================================================
 
-local function checkPlayers()
-
-    if not enabled then
-        return
-    end
-
-    local myCharacter = LocalPlayer.Character
-    local myRoot = myCharacter
-        and myCharacter:FindFirstChild("HumanoidRootPart")
-
-    if not myRoot then
-        return
-    end
-
-    for _, player in ipairs(Players:GetPlayers()) do
-
-        if player ~= LocalPlayer then
-
-            -- Check blocked UserId
-            if isBlockedUser(player) then
-                LocalPlayer:Kick(
-                    "Blocked Player detected: " ..
-                    tostring(player.UserId)
-                )
-                return
-            end
-
-            -- Check distance
-            local character = player.Character
-            local root = character
-                and character:FindFirstChild("HumanoidRootPart")
-
-            if root then
-
-                local distance =
-                    (root.Position - myRoot.Position).Magnitude
-
-                if distance <= detectionDistance then
-
-                    LocalPlayer:Kick(
-                        "Player detected within " ..
-                        tostring(detectionDistance) ..
-                        " studs."
-                    )
-
-                    return
-                end
-            end
-        end
-    end
+    return false
 end
 
--- Always-running checker.
--- Detection only happens while Protection is ON.
-task.spawn(function()
+local function checkPlayerID(player)
 
-    while true do
+    if player ~= LocalPlayer and isBlockedUser(player) then
 
-        if enabled then
-            checkPlayers()
-        end
+        LocalPlayer:Kick(
+            "Blocked Player detected: " ..
+            tostring(player.UserId)
+        )
 
-        task.wait(0.2)
+        return true
     end
 
+    return false
+end
+
+-- Check everyone already in the server
+for _, player in ipairs(Players:GetPlayers()) do
+    checkPlayerID(player)
+end
+
+-- Check players who join later
+Players.PlayerAdded:Connect(function(player)
+    task.wait(0.1)
+
+    if enabled then
+        checkPlayerID(player)
+    end
 end)
+
+--==================================================
+-- PROXIMITY DETECTION
+--==================================================
+
+task.spawn(function()
+
+    while enabled do
+
+        local myCharacter = LocalPlayer.Character
+        local myRoot = myCharacter
+            and myCharacter:FindFirstChild("HumanoidRootPart")
+
+        if myRoot then
+
+            for _, player in ipairs(Players:GetPlayers()) do
+
+                if player ~= LocalPlayer then
+
+                    -- Check UserId
+                    if isBlockedUser(player) then
+                        LocalPlayer:Kick(
+                            "Blocked Player detected: " ..
+                            tostring(player.UserId)
+                        )
+                        return
+                    end
 
                     -- Check distance
                     local character = player.Character
@@ -502,14 +491,6 @@ end)
                     end
                 end
             end
-        end
--- Check if running, only performs when Protection is ON.
-task.spawn(function()
-
-    while true do
-
-        if enabled then
-            checkPlayers()
         end
 
         task.wait(0.2)
@@ -634,30 +615,6 @@ UserInputService.InputChanged:Connect(function(input)
     end
 end)
 
---==================================================
--- Protection
---==================================================
-local ToggleButton = Instance.new("TextButton")
-ToggleButton.Size = UDim2.new(1, -20, 0, 30)
-ToggleButton.Position = UDim2.new(0, 10, 0, 175)
-ToggleButton.BackgroundColor3 = Color3.fromRGB(80, 50, 50)
-ToggleButton.Text = "Protection: OFF"
-ToggleButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-ToggleButton.TextSize = 12
-ToggleButton.Font = Enum.Font.Gotham
-ToggleButton.Parent = Main
-
-ToggleButton.MouseButton1Click:Connect(function()
-    enabled = not enabled
-
-    if enabled then
-        ToggleButton.Text = "Protection: ON"
-        ToggleButton.BackgroundColor3 = Color3.fromRGB(50, 100, 50)
-    else
-        ToggleButton.Text = "Protection: OFF"
-        ToggleButton.BackgroundColor3 = Color3.fromRGB(80, 50, 50)
-    end
-end)
 --==================================================
 -- CLOSE
 --==================================================
