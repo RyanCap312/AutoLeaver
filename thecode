@@ -9,7 +9,7 @@ local LocalPlayer = Players.LocalPlayer
 
 local detectionDistance = 150
 local minimizeKey = Enum.KeyCode.RightShift
-local enabled = true
+local enabled = false
 
 -- Add IDs here if you want defaults
 local blockedUserIds = {
@@ -615,6 +615,30 @@ UserInputService.InputChanged:Connect(function(input)
     end
 end)
 
+--==================================================
+-- Protection
+--==================================================
+local ToggleButton = Instance.new("TextButton")
+ToggleButton.Size = UDim2.new(1, -20, 0, 30)
+ToggleButton.Position = UDim2.new(0, 10, 0, 175)
+ToggleButton.BackgroundColor3 = Color3.fromRGB(80, 50, 50)
+ToggleButton.Text = "Protection: OFF"
+ToggleButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+ToggleButton.TextSize = 12
+ToggleButton.Font = Enum.Font.Gotham
+ToggleButton.Parent = Main
+
+ToggleButton.MouseButton1Click:Connect(function()
+    enabled = not enabled
+
+    if enabled then
+        ToggleButton.Text = "Protection: ON"
+        ToggleButton.BackgroundColor3 = Color3.fromRGB(50, 100, 50)
+    else
+        ToggleButton.Text = "Protection: OFF"
+        ToggleButton.BackgroundColor3 = Color3.fromRGB(80, 50, 50)
+    end
+end)
 --==================================================
 -- CLOSE
 --==================================================
