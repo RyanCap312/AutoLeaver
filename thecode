@@ -1,0 +1,627 @@
+local Players = game:GetService("Players")
+local UserInputService = game:GetService("UserInputService")
+
+local LocalPlayer = Players.LocalPlayer
+
+--==================================================
+-- SETTINGS
+--==================================================
+
+local detectionDistance = 150
+local minimizeKey = Enum.KeyCode.RightShift
+local enabled = true
+
+-- Add IDs here if you want defaults
+local blockedUserIds = {
+    -- 123456789,
+    -- 987654321,
+}
+
+--==================================================
+-- GUI
+--==================================================
+
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "ProximityKickGUI"
+ScreenGui.ResetOnSpawn = false
+ScreenGui.Parent = game:GetService("CoreGui")
+
+local Main = Instance.new("Frame")
+Main.Size = UDim2.new(0, 300, 0, 210)
+Main.Position = UDim2.new(0.5, -150, 0.5, -105)
+Main.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+Main.BorderSizePixel = 0
+Main.Parent = ScreenGui
+
+local Corner = Instance.new("UICorner")
+Corner.CornerRadius = UDim.new(0, 8)
+Corner.Parent = Main
+
+--==================================================
+-- TITLE
+--==================================================
+
+local Title = Instance.new("TextLabel")
+Title.Size = UDim2.new(1, -70, 0, 30)
+Title.Position = UDim2.new(0, 10, 0, 5)
+Title.BackgroundTransparency = 1
+Title.Text = "Proximity Kick"
+Title.TextColor3 = Color3.fromRGB(255, 255, 255)
+Title.TextSize = 16
+Title.Font = Enum.Font.GothamBold
+Title.TextXAlignment = Enum.TextXAlignment.Left
+Title.Parent = Main
+
+--==================================================
+-- MINIMIZE
+--==================================================
+
+local Minimize = Instance.new("TextButton")
+Minimize.Size = UDim2.new(0, 25, 0, 25)
+Minimize.Position = UDim2.new(1, -60, 0, 5)
+Minimize.BackgroundColor3 = Color3.fromRGB(55, 55, 55)
+Minimize.Text = "-"
+Minimize.TextColor3 = Color3.fromRGB(255, 255, 255)
+Minimize.TextSize = 18
+Minimize.Font = Enum.Font.GothamBold
+Minimize.Parent = Main
+
+local MinCorner = Instance.new("UICorner")
+MinCorner.CornerRadius = UDim.new(0, 5)
+MinCorner.Parent = Minimize
+
+--==================================================
+-- CLOSE
+--==================================================
+
+local Close = Instance.new("TextButton")
+Close.Size = UDim2.new(0, 25, 0, 25)
+Close.Position = UDim2.new(1, -30, 0, 5)
+Close.BackgroundColor3 = Color3.fromRGB(170, 50, 50)
+Close.Text = "X"
+Close.TextColor3 = Color3.fromRGB(255, 255, 255)
+Close.TextSize = 13
+Close.Font = Enum.Font.GothamBold
+Close.Parent = Main
+
+local CloseCorner = Instance.new("UICorner")
+CloseCorner.CornerRadius = UDim.new(0, 5)
+CloseCorner.Parent = Close
+
+--==================================================
+-- DISTANCE
+--==================================================
+
+local DistanceLabel = Instance.new("TextLabel")
+DistanceLabel.Size = UDim2.new(1, -20, 0, 20)
+DistanceLabel.Position = UDim2.new(0, 10, 0, 42)
+DistanceLabel.BackgroundTransparency = 1
+DistanceLabel.Text = "Kick distance (studs):"
+DistanceLabel.TextColor3 = Color3.fromRGB(220, 220, 220)
+DistanceLabel.TextSize = 13
+DistanceLabel.Font = Enum.Font.Gotham
+DistanceLabel.TextXAlignment = Enum.TextXAlignment.Left
+DistanceLabel.Parent = Main
+
+local DistanceBox = Instance.new("TextBox")
+DistanceBox.Size = UDim2.new(1, -20, 0, 28)
+DistanceBox.Position = UDim2.new(0, 10, 0, 63)
+DistanceBox.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+DistanceBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+DistanceBox.Text = tostring(detectionDistance)
+DistanceBox.TextSize = 14
+DistanceBox.Font = Enum.Font.Gotham
+DistanceBox.ClearTextOnFocus = false
+DistanceBox.Parent = Main
+
+local BoxCorner = Instance.new("UICorner")
+BoxCorner.CornerRadius = UDim.new(0, 5)
+BoxCorner.Parent = DistanceBox
+
+DistanceBox.FocusLost:Connect(function()
+    local value = tonumber(DistanceBox.Text)
+
+    if value and value > 0 then
+        detectionDistance = value
+        DistanceBox.Text = tostring(value)
+    else
+        DistanceBox.Text = tostring(detectionDistance)
+    end
+end)
+
+--==================================================
+-- ID LIST BUTTON
+--==================================================
+
+local IDListButton = Instance.new("TextButton")
+IDListButton.Size = UDim2.new(0.48, -5, 0, 30)
+IDListButton.Position = UDim2.new(0, 10, 0, 100)
+IDListButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+IDListButton.Text = "Player ID List"
+IDListButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+IDListButton.TextSize = 12
+IDListButton.Font = Enum.Font.Gotham
+IDListButton.Parent = Main
+
+local IDCorner = Instance.new("UICorner")
+IDCorner.CornerRadius = UDim.new(0, 5)
+IDCorner.Parent = IDListButton
+
+--==================================================
+-- ADD ID BUTTON
+--==================================================
+
+local AddIDButton = Instance.new("TextButton")
+AddIDButton.Size = UDim2.new(0.48, -5, 0, 30)
+AddIDButton.Position = UDim2.new(0.52, 0, 0, 100)
+AddIDButton.BackgroundColor3 = Color3.fromRGB(50, 80, 50)
+AddIDButton.Text = "+ Add Player ID"
+AddIDButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+AddIDButton.TextSize = 12
+AddIDButton.Font = Enum.Font.Gotham
+AddIDButton.Parent = Main
+
+local AddCorner = Instance.new("UICorner")
+AddCorner.CornerRadius = UDim.new(0, 5)
+AddCorner.Parent = AddIDButton
+
+--==================================================
+-- REBIND BUTTON
+--==================================================
+
+local Rebind = Instance.new("TextButton")
+Rebind.Size = UDim2.new(1, -20, 0, 30)
+Rebind.Position = UDim2.new(0, 10, 0, 140)
+Rebind.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+Rebind.Text = "Rebind Minimize Key: RightShift"
+Rebind.TextColor3 = Color3.fromRGB(255, 255, 255)
+Rebind.TextSize = 12
+Rebind.Font = Enum.Font.Gotham
+Rebind.Parent = Main
+
+local RebindCorner = Instance.new("UICorner")
+RebindCorner.CornerRadius = UDim.new(0, 5)
+RebindCorner.Parent = Rebind
+
+--==================================================
+-- ID PANEL
+--==================================================
+
+local IDPanel = Instance.new("Frame")
+IDPanel.Size = UDim2.new(0, 250, 0, 300)
+IDPanel.Position = UDim2.new(0.5, -125, 0.5, -150)
+IDPanel.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+IDPanel.Visible = false
+IDPanel.BorderSizePixel = 0
+IDPanel.Parent = ScreenGui
+
+local IDPanelCorner = Instance.new("UICorner")
+IDPanelCorner.CornerRadius = UDim.new(0, 8)
+IDPanelCorner.Parent = IDPanel
+
+local IDTitle = Instance.new("TextLabel")
+IDTitle.Size = UDim2.new(1, -40, 0, 35)
+IDTitle.Position = UDim2.new(0, 10, 0, 5)
+IDTitle.BackgroundTransparency = 1
+IDTitle.Text = "Blocked Player IDs"
+IDTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
+IDTitle.TextSize = 15
+IDTitle.Font = Enum.Font.GothamBold
+IDTitle.TextXAlignment = Enum.TextXAlignment.Left
+IDTitle.Parent = IDPanel
+
+local IDClose = Instance.new("TextButton")
+IDClose.Size = UDim2.new(0, 25, 0, 25)
+IDClose.Position = UDim2.new(1, -30, 0, 5)
+IDClose.BackgroundColor3 = Color3.fromRGB(170, 50, 50)
+IDClose.Text = "X"
+IDClose.TextColor3 = Color3.fromRGB(255, 255, 255)
+IDClose.Font = Enum.Font.GothamBold
+IDClose.Parent = IDPanel
+
+local IDScroll = Instance.new("ScrollingFrame")
+IDScroll.Size = UDim2.new(1, -20, 1, -50)
+IDScroll.Position = UDim2.new(0, 10, 0, 45)
+IDScroll.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+IDScroll.BorderSizePixel = 0
+IDScroll.ScrollBarThickness = 5
+IDScroll.Parent = IDPanel
+
+local IDLayout = Instance.new("UIListLayout")
+IDLayout.Padding = UDim.new(0, 4)
+IDLayout.Parent = IDScroll
+
+--==================================================
+-- REFRESH ID LIST
+--==================================================
+
+local function refreshIDList()
+
+    for _, child in ipairs(IDScroll:GetChildren()) do
+        if child:IsA("Frame") then
+            child:Destroy()
+        end
+    end
+
+    for index, userId in ipairs(blockedUserIds) do
+
+        local Row = Instance.new("Frame")
+        Row.Size = UDim2.new(1, -10, 0, 30)
+        Row.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+        Row.BorderSizePixel = 0
+        Row.Parent = IDScroll
+
+        local IDText = Instance.new("TextLabel")
+        IDText.Size = UDim2.new(1, -45, 1, 0)
+        IDText.Position = UDim2.new(0, 8, 0, 0)
+        IDText.BackgroundTransparency = 1
+        IDText.Text = tostring(userId)
+        IDText.TextColor3 = Color3.fromRGB(255, 255, 255)
+        IDText.TextSize = 12
+        IDText.Font = Enum.Font.Gotham
+        IDText.TextXAlignment = Enum.TextXAlignment.Left
+        IDText.Parent = Row
+
+        local Remove = Instance.new("TextButton")
+        Remove.Size = UDim2.new(0, 30, 0, 24)
+        Remove.Position = UDim2.new(1, -35, 0, 3)
+        Remove.BackgroundColor3 = Color3.fromRGB(130, 45, 45)
+        Remove.Text = "X"
+        Remove.TextColor3 = Color3.fromRGB(255, 255, 255)
+        Remove.TextSize = 11
+        Remove.Font = Enum.Font.GothamBold
+        Remove.Parent = Row
+
+        Remove.MouseButton1Click:Connect(function()
+            table.remove(blockedUserIds, index)
+            refreshIDList()
+        end)
+    end
+
+    IDScroll.CanvasSize = UDim2.new(
+        0,
+        0,
+        0,
+        IDLayout.AbsoluteContentSize.Y + 5
+    )
+end
+
+--==================================================
+-- ADD ID WINDOW
+--==================================================
+
+local AddWindow = Instance.new("Frame")
+AddWindow.Size = UDim2.new(0, 260, 0, 130)
+AddWindow.Position = UDim2.new(0.5, -130, 0.5, -65)
+AddWindow.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+AddWindow.BorderSizePixel = 0
+AddWindow.Visible = false
+AddWindow.Parent = ScreenGui
+
+local AddCorner = Instance.new("UICorner")
+AddCorner.CornerRadius = UDim.new(0, 8)
+AddCorner.Parent = AddWindow
+
+local AddTitle = Instance.new("TextLabel")
+AddTitle.Size = UDim2.new(1, -20, 0, 30)
+AddTitle.Position = UDim2.new(0, 10, 0, 5)
+AddTitle.BackgroundTransparency = 1
+AddTitle.Text = "Add Player ID"
+AddTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
+AddTitle.TextSize = 15
+AddTitle.Font = Enum.Font.GothamBold
+AddTitle.Parent = AddWindow
+
+local IDInput = Instance.new("TextBox")
+IDInput.Size = UDim2.new(1, -20, 0, 30)
+IDInput.Position = UDim2.new(0, 10, 0, 40)
+IDInput.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+IDInput.TextColor3 = Color3.fromRGB(255, 255, 255)
+IDInput.PlaceholderText = "Enter UserId..."
+IDInput.Text = ""
+IDInput.TextSize = 13
+IDInput.Font = Enum.Font.Gotham
+IDInput.Parent = AddWindow
+
+local AddConfirm = Instance.new("TextButton")
+AddConfirm.Size = UDim2.new(0.48, -5, 0, 30)
+AddConfirm.Position = UDim2.new(0, 10, 0, 82)
+AddConfirm.BackgroundColor3 = Color3.fromRGB(50, 100, 50)
+AddConfirm.Text = "Add"
+AddConfirm.TextColor3 = Color3.fromRGB(255, 255, 255)
+AddConfirm.Font = Enum.Font.GothamBold
+AddConfirm.Parent = AddWindow
+
+local AddCancel = Instance.new("TextButton")
+AddCancel.Size = UDim2.new(0.48, -5, 0, 30)
+AddCancel.Position = UDim2.new(0.52, 0, 0, 82)
+AddCancel.BackgroundColor3 = Color3.fromRGB(80, 50, 50)
+AddCancel.Text = "Cancel"
+AddCancel.TextColor3 = Color3.fromRGB(255, 255, 255)
+AddCancel.Font = Enum.Font.GothamBold
+AddCancel.Parent = AddWindow
+
+--==================================================
+-- ID LIST BUTTON
+--==================================================
+
+IDListButton.MouseButton1Click:Connect(function()
+    IDPanel.Visible = not IDPanel.Visible
+
+    if IDPanel.Visible then
+        refreshIDList()
+    end
+end)
+
+IDClose.MouseButton1Click:Connect(function()
+    IDPanel.Visible = false
+end)
+
+--==================================================
+-- ADD ID
+--==================================================
+
+AddIDButton.MouseButton1Click:Connect(function()
+    AddWindow.Visible = true
+    IDInput:CaptureFocus()
+end)
+
+AddCancel.MouseButton1Click:Connect(function()
+    AddWindow.Visible = false
+    IDInput.Text = ""
+end)
+
+AddConfirm.MouseButton1Click:Connect(function()
+
+    local id = tonumber(IDInput.Text)
+
+    if id and id > 0 and id % 1 == 0 then
+
+        local alreadyExists = false
+
+        for _, existingID in ipairs(blockedUserIds) do
+            if existingID == id then
+                alreadyExists = true
+                break
+            end
+        end
+
+        if not alreadyExists then
+            table.insert(blockedUserIds, id)
+        end
+
+        IDInput.Text = ""
+        AddWindow.Visible = false
+
+        refreshIDList()
+    end
+end)
+
+--==================================================
+-- CHECK PLAYER ID
+--==================================================
+
+local function isBlockedUser(player)
+
+    for _, userId in ipairs(blockedUserIds) do
+        if player.UserId == userId then
+            return true
+        end
+    end
+
+    return false
+end
+
+local function checkPlayerID(player)
+
+    if player ~= LocalPlayer and isBlockedUser(player) then
+
+        LocalPlayer:Kick(
+            "Blocked Player detected: " ..
+            tostring(player.UserId)
+        )
+
+        return true
+    end
+
+    return false
+end
+
+-- Check everyone already in the server
+for _, player in ipairs(Players:GetPlayers()) do
+    checkPlayerID(player)
+end
+
+-- Check players who join later
+Players.PlayerAdded:Connect(function(player)
+    task.wait(0.1)
+
+    if enabled then
+        checkPlayerID(player)
+    end
+end)
+
+--==================================================
+-- PROXIMITY DETECTION
+--==================================================
+
+task.spawn(function()
+
+    while enabled do
+
+        local myCharacter = LocalPlayer.Character
+        local myRoot = myCharacter
+            and myCharacter:FindFirstChild("HumanoidRootPart")
+
+        if myRoot then
+
+            for _, player in ipairs(Players:GetPlayers()) do
+
+                if player ~= LocalPlayer then
+
+                    -- Check UserId
+                    if isBlockedUser(player) then
+                        LocalPlayer:Kick(
+                            "Blocked Player detected: " ..
+                            tostring(player.UserId)
+                        )
+                        return
+                    end
+
+                    -- Check distance
+                    local character = player.Character
+                    local root = character
+                        and character:FindFirstChild("HumanoidRootPart")
+
+                    if root then
+
+                        local distance =
+                            (root.Position - myRoot.Position).Magnitude
+
+                        if distance <= detectionDistance then
+
+                            LocalPlayer:Kick(
+                                "Player detected within " ..
+                                tostring(detectionDistance) ..
+                                " studs."
+                            )
+
+                            return
+                        end
+                    end
+                end
+            end
+        end
+
+        task.wait(0.2)
+    end
+end)
+
+--==================================================
+-- MINIMIZE / RESTORE
+--==================================================
+
+local minimized = false
+
+local function toggleMinimize()
+
+    minimized = not minimized
+
+    if minimized then
+
+        Main.Size = UDim2.new(0, 150, 0, 35)
+
+        DistanceLabel.Visible = false
+        DistanceBox.Visible = false
+        IDListButton.Visible = false
+        AddIDButton.Visible = false
+        Rebind.Visible = false
+
+        Minimize.Text = "+"
+
+    else
+
+        Main.Size = UDim2.new(0, 300, 0, 210)
+
+        DistanceLabel.Visible = true
+        DistanceBox.Visible = true
+        IDListButton.Visible = true
+        AddIDButton.Visible = true
+        Rebind.Visible = true
+
+        Minimize.Text = "-"
+    end
+end
+
+Minimize.MouseButton1Click:Connect(toggleMinimize)
+
+--==================================================
+-- REBIND MINIMIZE KEY
+--==================================================
+
+local rebinding = false
+
+Rebind.MouseButton1Click:Connect(function()
+
+    rebinding = true
+    Rebind.Text = "Press any key..."
+
+    local connection
+
+    connection = UserInputService.InputBegan:Connect(function(input)
+
+        if input.UserInputType == Enum.UserInputType.Keyboard then
+
+            minimizeKey = input.KeyCode
+
+            Rebind.Text =
+                "Rebind Minimize Key: " ..
+                input.KeyCode.Name
+
+            rebinding = false
+
+            connection:Disconnect()
+        end
+    end)
+end)
+
+UserInputService.InputBegan:Connect(function(input, processed)
+
+    if not processed and not rebinding then
+
+        if input.KeyCode == minimizeKey then
+            toggleMinimize()
+        end
+    end
+end)
+
+--==================================================
+-- DRAGGING
+--==================================================
+
+local dragging = false
+local dragStart
+local startPosition
+
+Title.InputBegan:Connect(function(input)
+
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+
+        dragging = true
+        dragStart = input.Position
+        startPosition = Main.Position
+
+        input.Changed:Connect(function()
+
+            if input.UserInputState == Enum.UserInputState.End then
+                dragging = false
+            end
+        end)
+    end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+
+    if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+
+        local delta = input.Position - dragStart
+
+        Main.Position = UDim2.new(
+            startPosition.X.Scale,
+            startPosition.X.Offset + delta.X,
+            startPosition.Y.Scale,
+            startPosition.Y.Offset + delta.Y
+        )
+    end
+end)
+
+--==================================================
+-- CLOSE
+--==================================================
+
+Close.MouseButton1Click:Connect(function()
+
+    enabled = false
+
+    ScreenGui:Destroy()
+end)
