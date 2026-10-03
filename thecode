@@ -9,7 +9,7 @@ local LocalPlayer = Players.LocalPlayer
 
 local detectionDistance = 50
 local minimizeKey = Enum.KeyCode.RightShift
-local enabled = true
+local enabled = false
 
 -- Add IDs here if you want defaults
 local blockedUserIds = {
