@@ -414,8 +414,12 @@ end
 
 local function checkPlayerID(player)
 
-    if player ~= LocalPlayer and isBlockedUser(player) then
+    -- Do nothing when Protection is OFF
+    if not enabled then
+        return false
+    end
 
+    if player ~= LocalPlayer and isBlockedUser(player) then
         LocalPlayer:Kick(
             "Blocked Player detected: " ..
             tostring(player.UserId)
@@ -426,7 +430,6 @@ local function checkPlayerID(player)
 
     return false
 end
-
 -- Check everyone already in the server
 for _, player in ipairs(Players:GetPlayers()) do
     checkPlayerID(player)
